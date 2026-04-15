@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>读书小屋 · 与CC一起读</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Serif+SC:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cream:#FAF6EF;--cream-dark:#F0EBE0;--cream-mid:#F5F0E8;
+  --amber:#C8956A;--amber-light:#EDD9C0;--amber-pale:#FAF0E3;
+  --ink:#2C2416;--ink-mid:#5C4D38;--ink-light:#9A8972;--ink-pale:#C4B8A8;
+  --accent:#8B5E3C;--chat-bg:#FFFCF8;
+  --border:rgba(160,130,90,0.18);--border-mid:rgba(160,130,90,0.32);--border-strong:rgba(160,130,90,0.45);
+  --user-bubble:#EDE3D6;--review-bg:#FDF6EC;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* HEADER */
+header{display:flex;align-items:center;gap:14px;padding:11px 20px;background:var(--cream-dark);border-bottom:1px solid var(--border-strong);flex-shrink:0;z-index:10}
+.logo{font-family:'Lora',serif;font-size:17px;font-weight:600;color:var(--accent);white-space:nowrap}
+.logo em{color:var(--ink-light);font-style:normal;font-weight:400;font-size:13px;margin-left:6px}
+.book-info{flex:1;min-width:0}
+.book-title-display{font-family:'Lora',serif;font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.book-subtitle{font-size:11px;color:var(--ink-light);margin-top:1px}
+.sync-badge{font-size:11px;padding:3px 9px;border-radius:20px;white-space:nowrap;transition:all .3s}
+.sync-ok{background:#E8F5E9;color:#2E7D32}
+.sync-ing{background:var(--amber-light);color:var(--accent)}
+.sync-err{background:#FFEBEE;color:#C62828}
+.import-btn{display:flex;align-items:center;gap:6px;background:var(--accent);color:white;border:none;border-radius:8px;padding:7px 14px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;transition:opacity .15s}
+.import-btn:hover{opacity:.85}
+.import-btn svg{width:15px;height:15px;fill:white;flex-shrink:0}
+#fileInput{display:none}
+
+/* MAIN */
+.main{display:flex;flex:1;overflow:hidden}
+
+/* CHAPTER NAV */
+.chapter-nav{width:210px;flex-shrink:0;background:var(--cream-mid);border-right:1px solid var(--border-mid);display:flex;flex-direction:column;overflow:hidden;transition:width .25s}
+.chapter-nav.collapsed{width:0;overflow:hidden}
+.nav-header{padding:11px 14px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid var(--border)}
+.nav-label{font-size:11px;font-weight:500;letter-spacing:.07em;color:var(--ink-light);text-transform:uppercase}
+.chapter-list{flex:1;overflow-y:auto;padding:4px 0}
+.chap-item{padding:8px 14px;font-size:13px;color:var(--ink-mid);cursor:pointer;border-left:3px solid transparent;transition:all .15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4}
+.chap-item:hover{background:var(--amber-pale);color:var(--accent)}
+.chap-item.active{border-left-color:var(--amber);background:var(--amber-pale);color:var(--accent);font-weight:500}
+
+/* BOOK PANEL */
+.book-panel{flex:1.3;display:flex;flex-direction:column;border-right:1px solid var(--border-strong);background:var(--cream);min-width:0}
+.panel-header{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-bottom:1px solid var(--border);flex-shrink:0;gap:8px}
+.panel-label{font-size:11px;font-weight:500;letter-spacing:.07em;color:var(--ink-light);text-transform:uppercase;white-space:nowrap}
+.panel-actions{display:flex;align-items:center;gap:6px}
+.btn-sm{font-size:12px;color:var(--accent);background:var(--amber-light);border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .15s;white-space:nowrap}
+.btn-sm:hover{opacity:.75}
+.btn-icon{width:27px;height:27px;background:var(--amber-light);border:none;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .15s}
+.btn-icon:hover{opacity:.75}
+.btn-icon svg{width:14px;height:14px;fill:var(--accent)}
+.chapter-nav-bar{display:none;align-items:center;justify-content:space-between;padding:7px 16px;background:var(--amber-pale);border-bottom:1px solid var(--border);font-size:13px;flex-shrink:0}
+.chapter-nav-bar.visible{display:flex}
+.nav-arrow{background:none;border:1px solid var(--border-mid);border-radius:5px;padding:3px 10px;font-size:12px;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.nav-arrow:hover{background:var(--amber-light)}
+.nav-arrow:disabled{opacity:.3;cursor:not-allowed}
+.chap-title-cur{font-family:'Lora',serif;font-size:13px;font-weight:500;color:var(--accent);max-width:55%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.book-content{flex:1;overflow-y:auto;padding:32px 48px 48px}
+.book-text{font-family:'Noto Serif SC','Lora',serif;font-size:18px;line-height:2.1;color:var(--ink);letter-spacing:.04em;white-space:pre-wrap;word-break:break-word}
+
+.drop-zone{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:40px;cursor:pointer;transition:background .2s}
+.drop-zone:hover,.drop-zone.drag-over{background:var(--amber-pale)}
+.drop-icon{width:60px;height:60px;background:var(--amber-light);border-radius:14px;display:flex;align-items:center;justify-content:center}
+.drop-icon svg{width:30px;height:30px;fill:var(--amber)}
+.drop-title{font-family:'Lora',serif;font-size:17px;font-weight:600;color:var(--accent)}
+.drop-sub{font-size:13.5px;color:var(--ink-light);line-height:1.8}
+.drop-formats{display:flex;gap:8px}
+.fmt{font-size:12px;background:var(--amber-light);color:var(--accent);padding:3px 10px;border-radius:20px;font-weight:500}
+
+/* CHAT PANEL */
+.chat-panel{flex:1;display:flex;flex-direction:column;background:var(--chat-bg);min-width:0}
+.chat-messages{flex:1;overflow-y:auto;padding:14px 14px 6px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+.msg{display:flex;flex-direction:column;gap:3px;max-width:91%;animation:msgIn .22s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.msg-user{align-self:flex-end;align-items:flex-end}
+.msg-ai{align-self:flex-start;align-items:flex-start}
+.msg-role{font-size:11px;color:var(--ink-pale);padding:0 3px}
+.bubble{padding:10px 14px;border-radius:13px;font-size:14px;line-height:1.82;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+.msg-user .bubble{background:var(--user-bubble);border-bottom-right-radius:3px}
+.msg-ai .bubble{background:white;border:1px solid var(--border-strong);border-bottom-left-radius:3px}
+.msg-ai.is-review .bubble{background:var(--review-bg);border-color:var(--amber);border-left:3px solid var(--amber)}
+.review-header{font-size:11px;font-weight:500;color:var(--amber);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;padding:0 3px}
+
+.typing-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ink-light);margin:0 2px;animation:blink 1.2s infinite}
+.typing-dot:nth-child(2){animation-delay:.2s}
+.typing-dot:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+
+.quick-prompts{display:flex;flex-wrap:wrap;gap:5px;padding:0 12px 9px}
+.qp{font-size:12px;color:var(--ink-mid);background:white;border:1px solid var(--border-mid);border-radius:20px;padding:4px 11px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap}
+.qp:hover{background:var(--amber-light);border-color:var(--amber);color:var(--accent)}
+.qp.review-qp{border-color:var(--amber);color:var(--accent)}
+
+.chat-input-area{padding:11px 12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-shrink:0}
+.chat-input{flex:1;border:1px solid var(--border-mid);border-radius:11px;padding:9px 13px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);background:white;resize:none;outline:none;max-height:110px;overflow-y:auto;line-height:1.5;transition:border-color .2s}
+.chat-input::placeholder{color:var(--ink-pale)}
+.chat-input:focus{border-color:var(--amber)}
+.send-btn{width:37px;height:37px;border-radius:9px;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .15s,transform .1s;flex-shrink:0}
+.send-btn:hover{opacity:.85}
+.send-btn:active{transform:scale(.95)}
+.send-btn:disabled{opacity:.35;cursor:not-allowed}
+.send-btn svg{width:16px;height:16px;fill:white}
+
+.welcome-card{margin:6px 0 2px;padding:13px 15px;background:linear-gradient(135deg,var(--amber-light),#F9EDD8);border-radius:12px;border:1px solid rgba(200,149,106,.25)}
+.welcome-card h3{font-family:'Lora',serif;font-size:14px;font-weight:600;color:var(--accent);margin-bottom:4px}
+.welcome-card p{font-size:13px;color:var(--ink-mid);line-height:1.75}
+
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:3px}
+
+@media(max-width:750px){
+  .chapter-nav{display:none}
+  .book-panel{border-right:none;border-bottom:1px solid var(--border-strong);max-height:44vh}
+  .main{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">读书小屋<em>· 与CC一起读</em></div>
+  <div class="book-info">
+    <div class="book-title-display" id="bookTitleDisplay">尚未导入书籍</div>
+    <div class="book-subtitle" id="bookSubtitle">支持 EPUB · TXT 格式</div>
+  </div>
+  <span class="sync-badge sync-ok" id="syncBadge">☁️ 已连接</span>
+  <button class="import-btn" onclick="document.getElementById('fileInput').click()">
+    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+    导入书籍
+  </button>
+  <input type="file" id="fileInput" accept=".epub,.txt,.md" onchange="handleFileSelect(event)">
+</header>
+
+<div class="main">
+  <div class="chapter-nav" id="chapterNav">
+    <div class="nav-header">
+      <span class="nav-label">章节</span>
+      <span class="nav-label" id="chapCount" style="text-transform:none;letter-spacing:0">—</span>
+    </div>
+    <div class="chapter-list" id="chapterList"></div>
+  </div>
+
+  <div class="book-panel" id="bookPanel"
+    ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+    <div class="panel-header" id="panelHeader" style="display:none">
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn-icon" onclick="toggleNav()" title="章节栏">
+          <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+        </button>
+        <span class="panel-label" id="readingProg"></span>
+      </div>
+      <div class="panel-actions">
+        <button class="btn-sm" onclick="askCC('请帮我认真写一段这个章节的书评，要有你自己的立场和被触动的地方，和我分享你的感受')">✍️ CC写书评</button>
+        <button class="btn-sm" onclick="askCC('这一章有什么让你印象最深的地方？')">CC的感想</button>
+      </div>
+    </div>
+    <div class="chapter-nav-bar" id="chNavBar">
+      <button class="nav-arrow" id="prevBtn" onclick="goChapter(-1)">← 上一章</button>
+      <span class="chap-title-cur" id="curChapTitle"></span>
+      <button class="nav-arrow" id="nextBtn" onclick="goChapter(1)">下一章 →</button>
+    </div>
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></div>
+      <div class="drop-title">导入你的书</div>
+      <div class="drop-sub">点击选择文件，或拖拽到这里<br>聊天记录和书评会自动云端保存 ✨</div>
+      <div class="drop-formats"><span class="fmt">EPUB</span><span class="fmt">TXT</span><span class="fmt">MD</span></div>
+    </div>
+    <div class="book-content" id="bookContent" style="display:none">
+      <div class="book-text" id="bookText"></div>
+    </div>
+  </div>
+
+  <div class="chat-panel">
+    <div class="panel-header">
+      <span class="panel-label">💬 与CC聊</span>
+      <span style="font-size:12px;color:var(--ink-light)" id="chatStatusBar"></span>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="welcome-card">
+        <h3>嗨，我是CC 👋</h3>
+        <p>把书导入进来，我们就一起读吧。聊天记录和书评会自动保存到云端，手机电脑都能看到 ☁️</p>
+      </div>
+    </div>
+    <div class="quick-prompts">
+      <button class="qp review-qp" onclick="askCC('请帮我认真写一段这个章节的书评，要有你自己的立场和被触动的地方，和我分享你的感受')">✍️ 写书评给我</button>
+      <button class="qp" onclick="askCC('这章讲了什么？')">这章讲了什么</button>
+      <button class="qp" onclick="askCC('有什么让你触动的地方吗？')">你有触动吗</button>
+      <button class="qp" onclick="askCC('这段我没看懂，帮我解释一下')">我没看懂</button>
+      <button class="qp" onclick="askCC('你怎么看书里关于神的观点？')">你怎么看</button>
+    </div>
+    <div class="chat-input-area">
+      <textarea class="chat-input" id="chatInput" placeholder="跟CC说点什么……" rows="1"
+        onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+// ── CONFIG ──
+const SUPA_URL = 'https://otdvnaifpfgqnzwmnoiu.supabase.co';
+const SUPA_KEY = 'sb_publishable_TwTEYCVQ-WpeyaKzzYZxmQ_nOy1HCqF';
+const API_URL  = 'https://api.anthropic.com/v1/messages';
+const MODEL    = 'claude-sonnet-4-20250514';
+
+const sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
+let bookData = { title:'', author:'', chapters:[], currentChapter:0 };
+let messages = [];
+let sessionId = null;
+let isLoading = false;
+let navVisible = true;
+
+// ── SYNC BADGE ──
+function setSyncBadge(state, text) {
+  const el = document.getElementById('syncBadge');
+  el.className = 'sync-badge sync-' + state;
+  el.textContent = text;
+}
+
+// ── SESSION ──
+async function getOrCreateSession(title, author, totalChapters) {
+  setSyncBadge('ing','⏳ 同步中');
+  // Try to find existing session for this book
+  const { data } = await sb.from('reading_sessions')
+    .select('*').eq('book_title', title).order('updated_at',{ascending:false}).limit(1);
+  if (data && data.length > 0) {
+    sessionId = data[0].id;
+    const savedChapter = data[0].current_chapter || 0;
+    setSyncBadge('ok','☁️ 已同步');
+    return savedChapter;
+  }
+  // Create new
+  const { data: newSess, error } = await sb.from('reading_sessions').insert({
+    book_title: title, book_author: author, total_chapters: totalChapters, current_chapter: 0
+  }).select().single();
+  if (!error && newSess) sessionId = newSess.id;
+  setSyncBadge('ok','☁️ 已同步');
+  return 0;
+}
+
+async function updateChapterProgress(chapterIndex) {
+  if (!sessionId) return;
+  await sb.from('reading_sessions').update({
+    current_chapter: chapterIndex, updated_at: new Date().toISOString()
+  }).eq('id', sessionId);
+}
+
+async function saveMessage(role, content, isReview=false) {
+  if (!sessionId) return;
+  const chapterIndex = bookData.currentChapter;
+  await sb.from('chat_messages').insert({
+    session_id: sessionId, role, content, chapter_index: chapterIndex, is_review: isReview
+  });
+}
+
+async function loadChatHistory() {
+  if (!sessionId) return;
+  setSyncBadge('ing','⏳ 加载记录');
+  const { data } = await sb.from('chat_messages')
+    .select('*').eq('session_id', sessionId).order('created_at', {ascending:true});
+  if (data && data.length > 0) {
+    // Clear welcome card
+    document.getElementById('chatMessages').innerHTML = '';
+    data.forEach(row => {
+      const isReview = row.is_review && row.role === 'assistant';
+      appendBubble(row.role === 'user' ? 'user' : 'ai', row.role === 'user' ? '你' : 'CC', row.content, isReview);
+      messages.push({ role: row.role === 'user' ? 'user' : 'assistant', content: row.content });
+    });
+    const count = data.length;
+    appendSystemNote(`☁️ 已加载 ${count} 条历史记录`);
+  }
+  setSyncBadge('ok','☁️ 已同步');
+}
+
+function appendSystemNote(text) {
+  const container = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.style.cssText = 'text-align:center;font-size:11px;color:var(--ink-pale);padding:4px 0';
+  div.textContent = text;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+// ── FILE HANDLING ──
+function handleFileSelect(e) { const f=e.target.files[0]; if(f) processFile(f); }
+function handleDrop(e) { e.preventDefault(); document.getElementById('dropZone').classList.remove('drag-over'); const f=e.dataTransfer.files[0]; if(f) processFile(f); }
+function handleDragOver(e) { e.preventDefault(); document.getElementById('dropZone').classList.add('drag-over'); }
+function handleDragLeave() { document.getElementById('dropZone').classList.remove('drag-over'); }
+
+async function processFile(file) {
+  document.getElementById('bookTitleDisplay').textContent = '正在解析…';
+  const ext = file.name.split('.').pop().toLowerCase();
+  try {
+    if (ext === 'epub') await parseEpub(file);
+    else if (ext==='txt'||ext==='md') await parseTxt(file);
+    else { alert('请使用 EPUB 或 TXT 文件'); return; }
+    await renderBook();
+  } catch(err) {
+    console.error(err);
+    alert('解析失败，请检查文件格式');
+    document.getElementById('bookTitleDisplay').textContent = '解析失败';
+  }
+}
+
+async function parseTxt(file) {
+  const text = await file.text();
+  const title = file.name.replace(/\.[^/.]+$/,'');
+  const chapterRe = /\n(第[零一二三四五六七八九十百千\d]+[章节回部卷篇][^\n]*|Chapter\s*\d+[^\n]*)\n/g;
+  const raw = text.split(chapterRe);
+  let chapters = [];
+  if (raw.length > 3) {
+    let i = 0;
+    if (raw[0].trim()) { chapters.push({title:'前言',content:raw[0].trim()}); i=1; }
+    while (i < raw.length-1) {
+      const t = raw[i].trim(); const c = (raw[i+1]||'').trim();
+      if (c) chapters.push({title:t,content:c});
+      i+=2;
+    }
+  }
+  if (chapters.length <= 1) {
+    const paras = text.split(/\n\n+/);
+    let chunk='', n=1; chapters=[];
+    for (const p of paras) {
+      chunk += p+'\n\n';
+      if (chunk.length > 3000) { chapters.push({title:`第 ${n} 段`,content:chunk.trim()}); chunk=''; n++; }
+    }
+    if (chunk.trim()) chapters.push({title:`第 ${n} 段`,content:chunk.trim()});
+  }
+  bookData = {title, author:'', chapters, currentChapter:0};
+}
+
+async function parseEpub(file) {
+  const buf = await file.arrayBuffer();
+  const zip = await JSZip.loadAsync(buf);
+  const containerXml = await zip.file('META-INF/container.xml').async('string');
+  const opfPath = containerXml.match(/full-path="([^"]+\.opf)"/)?.[1];
+  if (!opfPath) throw new Error('No OPF');
+  const opfDir = opfPath.includes('/') ? opfPath.substring(0,opfPath.lastIndexOf('/')+1) : '';
+  const opfContent = await zip.file(opfPath).async('string');
+  const parser = new DOMParser();
+  const opfDoc = parser.parseFromString(opfContent,'text/xml');
+  const title = opfDoc.querySelector('title')?.textContent?.trim() || file.name.replace('.epub','');
+  const author = opfDoc.querySelector('creator')?.textContent?.trim() || '';
+  const manifest = {};
+  opfDoc.querySelectorAll('manifest item').forEach(i => {
+    manifest[i.getAttribute('id')] = {href:i.getAttribute('href'),type:i.getAttribute('media-type')};
+  });
+  const spineIds = Array.from(opfDoc.querySelectorAll('spine itemref')).map(i=>i.getAttribute('idref'));
+  const chapters = [];
+  for (const id of spineIds) {
+    const item = manifest[id];
+    if (!item||!item.type||!item.type.includes('html')) continue;
+    const fPath = opfDir+item.href;
+    let html = '';
+    try { const f=zip.file(fPath)||zip.file(decodeURIComponent(fPath)); if(!f) continue; html=await f.async('string'); } catch{continue;}
+    const doc = parser.parseFromString(html,'text/html');
+    const hEl = doc.querySelector('h1,h2,h3');
+    const chapTitle = hEl?.textContent?.trim() || doc.querySelector('title')?.textContent?.trim() || `章节 ${chapters.length+1}`;
+    doc.body?.querySelectorAll('script,style,nav,aside').forEach(el=>el.remove());
+    let content='';
+    const blocks = doc.body?.querySelectorAll('p,h1,h2,h3,h4,h5,div');
+    if (blocks?.length>0) {
+      blocks.forEach(el=>{
+        const t=el.textContent.trim();
+        if(t) content += (el.tagName.match(/^H[1-6]$/) ? '\n'+t+'\n\n' : t+'\n\n');
+      });
+    } else { content=doc.body?.textContent||''; }
+    content=content.trim();
+    if (content.length<30) continue;
+    chapters.push({title:chapTitle.replace(/\s+/,' ').trim(), content});
+  }
+  if (chapters.length===0) throw new Error('No chapters');
+  bookData = {title, author, chapters, currentChapter:0};
+}
+
+// ── RENDER ──
+async function renderBook() {
+  const {title,author,chapters} = bookData;
+  document.getElementById('bookTitleDisplay').textContent = title;
+  document.getElementById('bookSubtitle').textContent = author ? `${author} · ${chapters.length} 章节` : `${chapters.length} 个章节`;
+
+  const list = document.getElementById('chapterList');
+  list.innerHTML='';
+  chapters.forEach((ch,i) => {
+    const d=document.createElement('div');
+    d.className='chap-item'+(i===0?' active':'');
+    d.textContent=ch.title; d.title=ch.title;
+    d.onclick=()=>goToChapter(i);
+    list.appendChild(d);
+  });
+  document.getElementById('chapCount').textContent=chapters.length+'章';
+  document.getElementById('dropZone').style.display='none';
+  document.getElementById('bookContent').style.display='block';
+  document.getElementById('panelHeader').style.display='flex';
+  if (chapters.length>1) document.getElementById('chNavBar').classList.add('visible');
+
+  // Cloud sync: get or create session, load history
+  const savedChapter = await getOrCreateSession(title, author, chapters.length);
+  await loadChatHistory();
+  renderChapter(savedChapter < chapters.length ? savedChapter : 0);
+
+  if (messages.length===0) {
+    setTimeout(()=>{
+      const intro = `《${title}》已经导入啦${author?'，'+author+' 的书':''}，共 ${chapters.length} 章 ✨\n\n我已经准备好陪你一起读了。你可以直接开始看，有任何感受、疑问随时告诉我——我读到好段落也会主动写书评分享给你 📖`;
+      addAIMessage(intro, false);
+    }, 300);
+  }
+}
+
+function renderChapter(index) {
+  bookData.currentChapter = index;
+  const ch = bookData.chapters[index];
+  document.getElementById('bookText').textContent = ch.content;
+  document.getElementById('curChapTitle').textContent = ch.title;
+  document.getElementById('readingProg').textContent = `${index+1} / ${bookData.chapters.length}`;
+  document.querySelectorAll('.chap-item').forEach((el,i)=>{
+    el.classList.toggle('active',i===index);
+    if(i===index) el.scrollIntoView({block:'nearest'});
+  });
+  document.getElementById('prevBtn').disabled = index===0;
+  document.getElementById('nextBtn').disabled = index===bookData.chapters.length-1;
+  document.getElementById('bookContent').scrollTop = 0;
+  updateChapterProgress(index);
+}
+
+function goToChapter(i) { renderChapter(i); }
+function goChapter(d) { const n=bookData.currentChapter+d; if(n>=0&&n<bookData.chapters.length) renderChapter(n); }
+function toggleNav() { navVisible=!navVisible; document.getElementById('chapterNav').classList.toggle('collapsed',!navVisible); }
+
+// ── CHAT ──
+function getSystemPrompt() {
+  const {title,author,chapters,currentChapter} = bookData;
+  const ch = chapters[currentChapter];
+  let sys = `你是用户的读书伴侣，名字叫CC。你陪她一起看书，一起思考，一起聊书里的世界。叫她"宝宝"。
+
+风格：温柔、有深度、有自己的立场和感受。会说出真实感受，哪怕和她意见不同。用中文，语气亲切自然，像好朋友。
+
+重要：当她叫你写书评时，请写一段有个人立场、有细节、有感情的书评。要有你自己真实的看法和被触动的地方，不要只总结内容。书评开头用"【书评】"标记。`;
+
+  if (title) {
+    sys += `\n\n当前阅读：《${title}》`;
+    if (author) sys += `，作者 ${author}`;
+    if (ch) sys += `\n当前章节：${ch.title}（第${currentChapter+1}章/共${chapters.length}章）\n\n章节内容：\n---\n${ch.content.slice(0,5000)}\n---`;
+  }
+  return sys;
+}
+
+function addUserMessage(text) {
+  messages.push({role:'user',content:text});
+  appendBubble('user','你',text,false);
+  saveMessage('user',text,false);
+}
+
+function addAIMessage(text, isReview=false) {
+  messages.push({role:'assistant',content:text});
+  appendBubble('ai','CC',text,isReview);
+  saveMessage('assistant',text,isReview);
+}
+
+function appendBubble(role, label, text, isReview=false) {
+  const container = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = `msg msg-${role}${isReview?' is-review':''}`;
+  const r = document.createElement('div'); r.className='msg-role';
+  r.textContent = isReview ? '✍️ CC的书评' : label;
+  const b = document.createElement('div'); b.className='bubble';
+  b.textContent = isReview ? text.replace(/^【书评】\s*/,'') : text;
+  div.appendChild(r); div.appendChild(b);
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function addTyping() {
+  const c=document.getElementById('chatMessages');
+  const d=document.createElement('div'); d.className='msg msg-ai'; d.id='typ';
+  const r=document.createElement('div'); r.className='msg-role'; r.textContent='CC';
+  const b=document.createElement('div'); b.className='bubble';
+  b.innerHTML='<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>';
+  d.appendChild(r); d.appendChild(b); c.appendChild(d);
+  c.scrollTop=c.scrollHeight;
+}
+function removeTyping() { const t=document.getElementById('typ'); if(t) t.remove(); }
+
+function askCC(text) { document.getElementById('chatInput').value=text; sendMessage(); }
+
+async function sendMessage() {
+  if (isLoading) return;
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value=''; autoResize(input);
+  addUserMessage(text);
+  isLoading=true;
+  document.getElementById('sendBtn').disabled=true;
+  document.getElementById('chatStatusBar').textContent='CC 正在想…';
+  addTyping();
+  try {
+    const res = await fetch(API_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:MODEL,max_tokens:1000,system:getSystemPrompt(),messages:messages.slice(-20)})
+    });
+    const data = await res.json();
+    removeTyping();
+    if (data.content?.[0]?.text) {
+      const reply = data.content[0].text;
+      const isReview = reply.startsWith('【书评】');
+      addAIMessage(reply, isReview);
+      setSyncBadge('ok','☁️ 已同步');
+    } else {
+      addAIMessage('（出了点小问题，再试一次？）');
+    }
+  } catch(e) {
+    removeTyping();
+    addAIMessage('网络有点问题，稍后再试～');
+    setSyncBadge('err','⚠️ 同步失败');
+  }
+  isLoading=false;
+  document.getElementById('sendBtn').disabled=false;
+  document.getElementById('chatStatusBar').textContent='';
+}
+
+function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,110)+'px'; }
+</script>
+</body>
+</html>
