@@ -358,6 +358,28 @@ async function initSupabase() {
     showDebug('⚠️ 数据库连接失败');
   }
 }
+  // 书架视图导入新书
+async function handleShelfFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  // 显示阅读视图
+  showReading();
+  // 重置 sessionId，强制创建新书
+  sessionId = null;
+
+  try {
+    await processFile(file);
+    // 导入成功后刷新书架（在后台更新）
+    await loadShelf();
+  } catch (err) {
+    console.error('导入失败:', err);
+    alert('导入失败：' + err.message);
+  }
+
+  // 清空 input，允许重复导入同一个文件
+  event.target.value = '';
+}
 
 function showDebug(msg) {
   const el = document.getElementById('debugToast');
@@ -492,6 +514,8 @@ async function renderBook() {
   // 刷新书架
   await loadShelf();
 }
+  // 在 renderBook 函数的末尾（刷新界面之后）
+await loadShelf();
 
 // 获取或创建 session（修复版）
 async function getOrCreateSession(title, author, totalChapters) {
