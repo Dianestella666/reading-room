@@ -47,23 +47,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);h
 .book-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--amber-light);transition:background .18s}
 .book-card:hover{box-shadow:0 4px 20px rgba(100,70,30,.1);transform:translateY(-1px)}
 .book-card:hover::before{background:var(--amber)}
-.book-card-title{font-family:'Lora',serif;font-size:16px;font-weight:600;color:var(--ink);margin-bottom:3px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;padding-right:60px}
-.book-card-author{font-size:12px;color:var(--ink-light);margin-bottom:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:40px}
+.book-card-title{font-family:'Lora',serif;font-size:16px;font-weight:600;color:var(--ink);margin-bottom:3px;line-height:1.4}
+.book-card-author{font-size:12px;color:var(--ink-light);margin-bottom:14px}
 .book-card-progress{margin-bottom:12px}
 .progress-bar-bg{height:4px;background:var(--cream-dark);border-radius:2px;overflow:hidden;margin-bottom:5px}
 .progress-bar-fill{height:100%;background:var(--amber);border-radius:2px;transition:width .3s}
 .progress-text{font-size:11px;color:var(--ink-light)}
 .book-card-stats{display:flex;gap:12px}
 .stat-pill{font-size:11px;color:var(--ink-mid);background:var(--cream-mid);padding:3px 9px;border-radius:12px;display:flex;align-items:center;gap:4px}
-.book-card-date{position:absolute;top:16px;right:16px;font-size:11px;color:var(--ink-pale);white-space:nowrap}
+.book-card-date{position:absolute;top:16px;right:16px;font-size:11px;color:var(--ink-pale)}
 .book-card-continue{display:none;position:absolute;bottom:16px;right:16px;font-size:12px;font-weight:500;color:var(--accent);background:var(--amber-light);padding:4px 12px;border-radius:20px}
 .book-card:hover .book-card-continue{display:block}
-.book-card-delete{display:none;position:absolute;top:14px;right:14px;width:24px;height:24px;border-radius:6px;border:none;background:rgba(198,40,40,0.08);cursor:pointer;align-items:center;justify-content:center;transition:all .15s;z-index:2}
-.book-card-delete svg{width:13px;height:13px;fill:#C62828;opacity:.5;transition:opacity .15s}
-.book-card:hover .book-card-delete{display:flex}
-.book-card:hover .book-card-date{display:none}
-.book-card-delete:hover{background:rgba(198,40,40,0.15)}
-.book-card-delete:hover svg{opacity:1}
 
 /* ── READING VIEW ── */
 #readingView{flex:1;display:flex;flex-direction:column;overflow:hidden}
@@ -189,10 +183,6 @@ header{display:flex;align-items:center;gap:12px;padding:10px 18px;background:var
 .welcome-card p{font-size:12.5px;color:var(--ink-mid);line-height:1.75}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:3px}
 @media(max-width:750px){.chapter-nav{display:none}.book-panel{border-right:none;border-bottom:1px solid var(--border-strong);max-height:43vh}.main{flex-direction:column}}
-
-/* ── DEBUG TOAST ── */
-.debug-toast{position:fixed;bottom:16px;left:16px;background:#2C2416;color:#EDD9C0;font-size:12px;padding:8px 14px;border-radius:8px;z-index:9999;max-width:400px;line-height:1.5;animation:fadeIn .2s ease;pointer-events:none;opacity:0;transition:opacity .3s}
-.debug-toast.show{opacity:1}
 </style>
 </head>
 <body>
@@ -209,12 +199,12 @@ header{display:flex;align-items:center;gap:12px;padding:10px 18px;background:var
         <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
         导入新书
       </button>
-      <input type="file" id="fileInputShelf" accept=".epub,.txt,.md" onchange="handleShelfFileSelect(event)" style="display:none">
+      <input type="file" id="fileInputShelf" accept=".epub,.txt,.md" onchange="handleShelfFileSelect(event)">
     </div>
   </div>
   <div class="shelf-body" id="shelfBody">
-    <div class="shelf-greeting" id="shelfGreeting"></div>
-    <div class="shelf-sub" id="shelfSub">点击一本书继续阅读，或导入新书</div>
+    <div class="shelf-greeting">早安，宝宝 ☀️ <strong>书架</strong></div>
+    <div class="shelf-sub">点击一本书继续阅读，或导入新书</div>
     <div id="booksGrid" class="books-grid"></div>
     <div id="shelfEmpty" class="shelf-empty" style="display:none">
       <div class="shelf-empty-icon"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></div>
@@ -326,61 +316,24 @@ header{display:flex;align-items:center;gap:12px;padding:10px 18px;background:var
   </div>
 </div>
 
-<!-- Debug Toast -->
-<div class="debug-toast" id="debugToast"></div>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 const SUPA_URL='https://otdvnaifpfgqnzwmnoiu.supabase.co';
 const SUPA_KEY='sb_publishable_TwTEYCVQ-WpeyaKzzYZxmQ_nOy1HCqF';
-const API_URL='https://api.anthropic.com/v1/messages';
+const API_URL='/api/chat';
 const MODEL='claude-sonnet-4-20250514';
-
-let sb = null;
-let supabaseReady = false;
-
-// ── [FIX] Supabase init with connection test ──
-async function initSupabase() {
-  try {
-    sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
-    // Test the connection with a simple query
-    const { data, error } = await sb.from('reading_sessions').select('id').limit(1);
-    if (error) {
-      console.error('[Supabase] Connection test failed:', error.message);
-      showDebug('⚠️ 数据库连接失败: ' + error.message);
-      supabaseReady = false;
-    } else {
-      console.log('[Supabase] Connected OK');
-      supabaseReady = true;
-    }
-  } catch (e) {
-    console.error('[Supabase] Init error:', e);
-    showDebug('⚠️ 数据库初始化失败');
-    supabaseReady = false;
-  }
-}
+const sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);
 
 let bookData={title:'',author:'',chapters:[],currentChapter:0};
 let messages=[],sessionId=null,isLoading=false,navVisible=true;
 let currentSelection='',currentTab='chat',notebookEntries=[];
-
-// ── [FIX] Debug toast helper ──
-function showDebug(msg) {
-  const el = document.getElementById('debugToast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(el._timer);
-  el._timer = setTimeout(() => el.classList.remove('show'), 4000);
-  console.warn('[Debug]', msg);
-}
 
 // ── VIEW SWITCHING ──
 function showShelf(){document.getElementById('shelfView').classList.remove('hidden');document.getElementById('readingView').classList.add('hidden');}
 function showReading(){document.getElementById('shelfView').classList.add('hidden');document.getElementById('readingView').classList.remove('hidden');}
 
 async function goToShelf(){
-  updateGreeting();
   showShelf();
   await loadShelf();
 }
@@ -389,55 +342,20 @@ async function goToShelf(){
 function setSyncBadge(id,state,text){const el=document.getElementById(id);if(!el)return;el.className='sync-badge sync-'+state;el.textContent=text;}
 
 async function loadShelf(){
-  if (!supabaseReady) {
-    // [FIX] If Supabase is not ready, show empty state with error hint
-    setSyncBadge('shelfSyncBadge','err','⚠️ 未连接');
-    document.getElementById('booksGrid').innerHTML='';
-    document.getElementById('shelfEmpty').style.display='flex';
-    document.querySelector('#shelfEmpty h2').textContent='连接数据库失败';
-    document.querySelector('#shelfEmpty p').textContent='请检查网络或刷新页面重试';
-    return;
-  }
-
   setSyncBadge('shelfSyncBadge','ing','⏳ 加载中');
-
-  const { data: sessions, error } = await sb.from('reading_sessions').select('*').order('updated_at',{ascending:false});
-
-  // [FIX] Distinguish between "query failed" and "no data"
-  if (error) {
-    console.error('[loadShelf] Query error:', error.message);
-    setSyncBadge('shelfSyncBadge','err','⚠️ 加载失败');
-    showDebug('书架加载失败: ' + error.message);
-    return; // Don't clear existing UI on error
-  }
-
-  if(!sessions || sessions.length===0){
-    document.getElementById('booksGrid').innerHTML='';
-    document.getElementById('shelfEmpty').style.display='flex';
-    // [FIX] Reset empty state text (might have been changed by error state)
-    document.querySelector('#shelfEmpty h2').textContent='书架还空着';
-    document.querySelector('#shelfEmpty p').textContent='导入第一本书，我们就开始一起读吧 ✨';
-    setSyncBadge('shelfSyncBadge','ok','☁️ 已连接');
-    return;
-  }
-
+  const {data:sessions}=await sb.from('reading_sessions').select('*').order('updated_at',{ascending:false});
+  if(!sessions||sessions.length===0){document.getElementById('booksGrid').innerHTML='';document.getElementById('shelfEmpty').style.display='flex';setSyncBadge('shelfSyncBadge','ok','☁️ 已连接');return;}
   document.getElementById('shelfEmpty').style.display='none';
 
   // Get stats
   const sessionIds=sessions.map(s=>s.id);
-  const [reviewsRes, annotRes] = await Promise.all([
+  const [{data:reviews},{data:annotations}]=await Promise.all([
     sb.from('chat_messages').select('session_id').eq('is_review',true).in('session_id',sessionIds),
     sb.from('annotations').select('session_id').in('session_id',sessionIds)
   ]);
-
-  const reviews = reviewsRes.data || [];
-  const annotations = annotRes.data || [];
-  if (reviewsRes.error) console.warn('[loadShelf] Reviews query error:', reviewsRes.error.message);
-  if (annotRes.error) console.warn('[loadShelf] Annotations query error:', annotRes.error.message);
-
-  const reviewCounts={}, annotCounts={};
-  reviews.forEach(r=>{reviewCounts[r.session_id]=(reviewCounts[r.session_id]||0)+1;});
-  annotations.forEach(a=>{annotCounts[a.session_id]=(annotCounts[a.session_id]||0)+1;});
+  const reviewCounts={},annotCounts={};
+  (reviews||[]).forEach(r=>{reviewCounts[r.session_id]=(reviewCounts[r.session_id]||0)+1;});
+  (annotations||[]).forEach(a=>{annotCounts[a.session_id]=(annotCounts[a.session_id]||0)+1;});
 
   const grid=document.getElementById('booksGrid');
   grid.innerHTML='';
@@ -449,9 +367,6 @@ async function loadShelf(){
     const card=document.createElement('div');
     card.className='book-card';
     card.innerHTML=`
-      <button class="book-card-delete" onclick="event.stopPropagation();deleteBook('${s.id}','${escHtml(s.book_title)}')" title="删除此书">
-        <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-      </button>
       <div class="book-card-date">${date}</div>
       <div class="book-card-title">${escHtml(s.book_title)}</div>
       <div class="book-card-author">${s.book_author?escHtml(s.book_author):'未知作者'}</div>
@@ -494,22 +409,8 @@ async function openBookSession(session){
 }
 
 // ── FILE HANDLING ──
-function handleShelfFileSelect(e){
-  const f=e.target.files[0];
-  if(f){
-    // [FIX] Reset sessionId so new import always creates a new session
-    sessionId = null;
-    showReading();
-    processFile(f);
-  }
-  // [FIX] Reset file input so same file can be re-selected
-  e.target.value = '';
-}
-function handleFileSelect(e){
-  const f=e.target.files[0];
-  if(f) processFile(f);
-  e.target.value = '';
-}
+function handleShelfFileSelect(e){const f=e.target.files[0];if(f){showReading();processFile(f);}}
+function handleFileSelect(e){const f=e.target.files[0];if(f)processFile(f);}
 function handleDrop(e){e.preventDefault();document.querySelector('.book-panel .drop-zone')?.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)processFile(f);}
 function handleDragOver(e){e.preventDefault();document.querySelector('.book-panel .drop-zone')?.classList.add('drag-over');}
 function handleDragLeave(){document.querySelector('.book-panel .drop-zone')?.classList.remove('drag-over');}
@@ -573,28 +474,19 @@ async function renderBook(){
   document.getElementById('panelHeader').style.display='flex';
   if(chapters.length>1)document.getElementById('chNavBar').classList.add('visible');
 
-  // [FIX] If coming from shelf with existing session, reuse; else create new
-  let savedChapter = bookData.currentChapter || 0;
+  // If coming from shelf with existing session, reuse it; else create new
+  let savedChapter=bookData.currentChapter||0;
   if(!sessionId){
-    savedChapter = await getOrCreateSession(title, author, chapters.length);
+    savedChapter=await getOrCreateSession(title,author,chapters.length);
     await loadChatHistory();
     await loadAllNotebookEntries();
   } else {
     // Update session with new chapter count if re-importing
-    const { error } = await sb.from('reading_sessions').update({
-      book_author: author,
-      total_chapters: chapters.length,
-      updated_at: new Date().toISOString()
-    }).eq('id', sessionId);
-    if (error) console.warn('[renderBook] Update session error:', error.message);
-    savedChapter = Math.min(bookData.currentChapter, chapters.length - 1);
+    await sb.from('reading_sessions').update({book_author:author,total_chapters:chapters.length,updated_at:new Date().toISOString()}).eq('id',sessionId);
+    savedChapter=Math.min(bookData.currentChapter,chapters.length-1);
   }
-  renderChapter(savedChapter < chapters.length ? savedChapter : 0);
-  if(messages.length===0) {
-    setTimeout(()=>{
-      addAIMessage('《'+title+'》导入好啦'+(author?'，'+author+' 的书':'')+'，共 '+chapters.length+' 章 ✨\n\n选中正文里的文字，可以写批注或叫我一起讨论 📖', false);
-    }, 300);
-  }
+  renderChapter(savedChapter<chapters.length?savedChapter:0);
+  if(messages.length===0)setTimeout(()=>{addAIMessage('《'+title+'》导入好啦'+(author?'，'+author+' 的书':'')+'，共 '+chapters.length+' 章 ✨\n\n选中正文里的文字，可以写批注或叫我一起讨论 📖',false);},300);
 }
 
 function renderChapter(index){
@@ -613,155 +505,41 @@ function goChapter(d){const n=bookData.currentChapter+d;if(n>=0&&n<bookData.chap
 function toggleNav(){navVisible=!navVisible;document.getElementById('chapterNav').classList.toggle('collapsed',!navVisible);}
 
 // ── SUPABASE OPS ──
-async function getOrCreateSession(title, author, totalChapters){
-  if (!supabaseReady) {
-    console.warn('[getOrCreateSession] Supabase not ready, skipping');
-    return 0;
-  }
-
+async function getOrCreateSession(title,author,totalChapters){
   setSyncBadge('syncBadge','ing','⏳ 同步中');
-
-  // [FIX] Check for existing session by title
-  const { data, error: selectErr } = await sb.from('reading_sessions')
-    .select('*')
-    .eq('book_title', title)
-    .order('updated_at', {ascending: false})
-    .limit(1);
-
-  if (selectErr) {
-    console.error('[getOrCreateSession] Select error:', selectErr.message);
-    showDebug('查询会话失败: ' + selectErr.message);
-    setSyncBadge('syncBadge','err','⚠️ 同步失败');
-    return 0;
-  }
-
-  if(data && data.length > 0){
-    sessionId = data[0].id;
-    console.log('[getOrCreateSession] Found existing session:', sessionId);
-    setSyncBadge('syncBadge','ok','☁️ 已同步');
-    return data[0].current_chapter || 0;
-  }
-
-  // [FIX] Create new session with proper error handling
-  const { data: newSession, error: insertErr } = await sb.from('reading_sessions')
-    .insert({
-      book_title: title,
-      book_author: author,
-      total_chapters: totalChapters,
-      current_chapter: 0
-    })
-    .select()
-    .single();
-
-  if (insertErr) {
-    console.error('[getOrCreateSession] Insert error:', insertErr.message);
-    showDebug('创建会话失败: ' + insertErr.message);
-    setSyncBadge('syncBadge','err','⚠️ 同步失败');
-    return 0;
-  }
-
-  if (newSession) {
-    sessionId = newSession.id;
-    console.log('[getOrCreateSession] Created new session:', sessionId);
-  } else {
-    console.error('[getOrCreateSession] Insert returned null');
-    showDebug('创建会话异常: 返回为空');
-  }
-
-  setSyncBadge('syncBadge','ok','☁️ 已同步');
-  return 0;
+  const {data}=await sb.from('reading_sessions').select('*').eq('book_title',title).order('updated_at',{ascending:false}).limit(1);
+  if(data&&data.length>0){sessionId=data[0].id;setSyncBadge('syncBadge','ok','☁️ 已同步');return data[0].current_chapter||0;}
+  const {data:s}=await sb.from('reading_sessions').insert({book_title:title,book_author:author,total_chapters:totalChapters,current_chapter:0}).select().single();
+  if(s)sessionId=s.id;setSyncBadge('syncBadge','ok','☁️ 已同步');return 0;
 }
-
-async function updateChapterProgress(i){
-  if(!sessionId || !supabaseReady) return;
-  const { error } = await sb.from('reading_sessions').update({
-    current_chapter: i,
-    updated_at: new Date().toISOString()
-  }).eq('id', sessionId);
-  if (error) console.warn('[updateChapterProgress] Error:', error.message);
+async function updateChapterProgress(i){if(!sessionId)return;await sb.from('reading_sessions').update({current_chapter:i,updated_at:new Date().toISOString()}).eq('id',sessionId);}
+async function saveMessage(role,content,isReview=false){if(!sessionId)return;await sb.from('chat_messages').insert({session_id:sessionId,role,content,chapter_index:bookData.currentChapter,is_review:isReview});}
+async function saveAnnotation(selectedText,note,type){
+  if(!sessionId)return;
+  const ch=bookData.chapters[bookData.currentChapter];
+  const {data}=await sb.from('annotations').insert({session_id:sessionId,selected_text:selectedText,note,chapter_index:bookData.currentChapter,chapter_title:ch?.title||'',type}).select().single();
+  if(data){notebookEntries.push({...data,entry_type:type});updateNotebookCount();}
 }
-
-async function saveMessage(role, content, isReview=false){
-  if(!sessionId || !supabaseReady) return;
-  const { error } = await sb.from('chat_messages').insert({
-    session_id: sessionId,
-    role,
-    content,
-    chapter_index: bookData.currentChapter,
-    is_review: isReview
-  });
-  if (error) console.warn('[saveMessage] Error:', error.message);
-}
-
-async function saveAnnotation(selectedText, note, type){
-  if(!sessionId || !supabaseReady) return;
-  const ch = bookData.chapters[bookData.currentChapter];
-  const { data, error } = await sb.from('annotations').insert({
-    session_id: sessionId,
-    selected_text: selectedText,
-    note,
-    chapter_index: bookData.currentChapter,
-    chapter_title: ch?.title || '',
-    type
-  }).select().single();
-
-  if (error) {
-    console.warn('[saveAnnotation] Error:', error.message);
-    showDebug('保存批注失败: ' + error.message);
-    return;
-  }
-  if(data){
-    notebookEntries.push({...data, entry_type: type});
-    updateNotebookCount();
-  }
-}
-
 async function loadAllNotebookEntries(){
-  if(!sessionId || !supabaseReady) return;
-  const [reviewsRes, annotRes] = await Promise.all([
+  if(!sessionId)return;
+  const [{data:reviews},{data:annotations}]=await Promise.all([
     sb.from('chat_messages').select('*').eq('session_id',sessionId).eq('is_review',true).order('created_at',{ascending:true}),
     sb.from('annotations').select('*').eq('session_id',sessionId).order('created_at',{ascending:true})
   ]);
-
-  if (reviewsRes.error) console.warn('[loadNotebook] Reviews error:', reviewsRes.error.message);
-  if (annotRes.error) console.warn('[loadNotebook] Annotations error:', annotRes.error.message);
-
-  const reviews = reviewsRes.data || [];
-  const annotations = annotRes.data || [];
-
-  notebookEntries = [
-    ...reviews.map(r=>({...r, entry_type:'review'})),
-    ...annotations.map(a=>({...a, entry_type: a.type}))
-  ];
+  notebookEntries=[...(reviews||[]).map(r=>({...r,entry_type:'review'})),...(annotations||[]).map(a=>({...a,entry_type:a.type}))];
   notebookEntries.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
   updateNotebookCount();
 }
-
 function updateNotebookCount(){document.getElementById('notebookCount').textContent=notebookEntries.length;}
-
 async function loadChatHistory(){
-  if(!sessionId || !supabaseReady) return;
-  setSyncBadge('syncBadge','ing','⏳ 加载记录');
-  const { data, error } = await sb.from('chat_messages').select('*').eq('session_id',sessionId).order('created_at',{ascending:true});
-
-  if (error) {
-    console.warn('[loadChatHistory] Error:', error.message);
-    setSyncBadge('syncBadge','err','⚠️ 加载失败');
-    return;
-  }
-
-  if(data && data.length > 0){
+  if(!sessionId)return;setSyncBadge('syncBadge','ing','⏳ 加载记录');
+  const {data}=await sb.from('chat_messages').select('*').eq('session_id',sessionId).order('created_at',{ascending:true});
+  if(data&&data.length>0){
     document.getElementById('chatMessages').innerHTML='';
-    data.forEach(row=>{
-      const isReview = row.is_review && row.role === 'assistant';
-      appendBubble(row.role==='user'?'user':'ai', row.role==='user'?'你':'CC', row.content, isReview);
-      messages.push({role: row.role==='user'?'user':'assistant', content: row.content});
-    });
+    data.forEach(row=>{const isReview=row.is_review&&row.role==='assistant';appendBubble(row.role==='user'?'user':'ai',row.role==='user'?'你':'CC',row.content,isReview);messages.push({role:row.role==='user'?'user':'assistant',content:row.content});});
     appendSystemNote('☁️ 已加载 '+data.length+' 条历史记录');
-  }
-  setSyncBadge('syncBadge','ok','☁️ 已同步');
+  }setSyncBadge('syncBadge','ok','☁️ 已同步');
 }
-
 function appendSystemNote(text){const c=document.getElementById('chatMessages');const d=document.createElement('div');d.style.cssText='text-align:center;font-size:11px;color:var(--ink-pale);padding:3px 0';d.textContent=text;c.appendChild(d);c.scrollTop=c.scrollHeight;}
 
 // ── TABS ──
@@ -870,68 +648,15 @@ async function sendMessage(){
     const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:MODEL,max_tokens:1000,system:getSystemPrompt(),messages:messages.slice(-20)})});
     const data=await res.json();removeTyping();
     if(data.content?.[0]?.text){const reply=data.content[0].text;const isReview=reply.startsWith('【书评】');addAIMessage(reply,isReview);setSyncBadge('syncBadge','ok','☁️ 已同步');}
-    else{
-      console.error('[sendMessage] Unexpected API response:', JSON.stringify(data));
-      addAIMessage('（出了点小问题，再试一次？）');
-    }
-  }catch(e){
-    console.error('[sendMessage] Fetch error:', e);
-    removeTyping();addAIMessage('网络有点问题，稍后再试～');setSyncBadge('syncBadge','err','⚠️ 同步失败');
-  }
+    else addAIMessage('（出了点小问题，再试一次？）');
+  }catch(e){removeTyping();addAIMessage('网络有点问题，稍后再试～');setSyncBadge('syncBadge','err','⚠️ 同步失败');}
   isLoading=false;document.getElementById('sendBtn').disabled=false;
 }
 function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}}
 function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,100)+'px';}
 
-// ── GREETING ──
-function updateGreeting() {
-  const h = new Date().getHours();
-  const greetings = [
-    { range: [5,9],   texts: ['清晨好，宝宝 🌅', '早安，宝宝 ☀️', '新的一天，宝宝 🌤️'] },
-    { range: [9,12],  texts: ['上午好，宝宝 📖', '宝宝，上午读会儿书？☕', '嗨宝宝，今天读什么？✨'] },
-    { range: [12,14], texts: ['午安，宝宝 🍵', '中午好呀，宝宝 🌿', '宝宝，午后小憩前翻两页？📚'] },
-    { range: [14,18], texts: ['下午好，宝宝 ☕', '宝宝，下午茶时间 🍃', '午后好，宝宝 🌾'] },
-    { range: [18,22], texts: ['晚上好，宝宝 🌙', '宝宝，夜读时间 🕯️', '今晚读点什么？🌜'] },
-    { range: [22,24], texts: ['夜深了，宝宝 🌛', '宝宝，睡前翻几页？✨', '晚安时间，宝宝 🌠'] },
-    { range: [0,5],   texts: ['夜猫子宝宝 🦉', '宝宝还没睡呀 🌙', '深夜书房，宝宝 🕯️'] }
-  ];
-  const slot = greetings.find(g => h >= g.range[0] && h < g.range[1]) || greetings[greetings.length - 1];
-  const text = slot.texts[Math.floor(Math.random() * slot.texts.length)];
-  const el = document.getElementById('shelfGreeting');
-  if (el) el.innerHTML = text + ' <strong>书架</strong>';
-}
-
-// ── DELETE BOOK ──
-async function deleteBook(sessionId_del, title) {
-  if (!confirm('确定要删除《' + title + '》吗？\n书评和批注也会一起删除。')) return;
-  if (!supabaseReady) { showDebug('数据库未连接，无法删除'); return; }
-
-  setSyncBadge('shelfSyncBadge', 'ing', '⏳ 删除中');
-  try {
-    // Delete related data first
-    await sb.from('chat_messages').delete().eq('session_id', sessionId_del);
-    await sb.from('annotations').delete().eq('session_id', sessionId_del);
-    const { error } = await sb.from('reading_sessions').delete().eq('id', sessionId_del);
-    if (error) {
-      console.error('[deleteBook] Error:', error.message);
-      showDebug('删除失败: ' + error.message);
-      setSyncBadge('shelfSyncBadge', 'err', '⚠️ 删除失败');
-      return;
-    }
-    // If we just deleted the currently open session, clear it
-    if (sessionId === sessionId_del) sessionId = null;
-    await loadShelf();
-  } catch (e) {
-    console.error('[deleteBook] Exception:', e);
-    showDebug('删除异常');
-    setSyncBadge('shelfSyncBadge', 'err', '⚠️ 删除失败');
-  }
-}
-
 // ── INIT ──
 (async()=>{
-  updateGreeting();
-  await initSupabase();
   await loadShelf();
 })();
 </script>
