@@ -8,36 +8,49 @@ export default async function handler(req, res) {
   try {
     const { system, messages, max_tokens } = req.body;
 
-    // Convert Anthropic format → Gemini format
-    const geminiMessages = [];
-    if (system) {
-      geminiMessages.push({ role: 'user', parts: [{ text: '[系统设定]\n' + system }] });
-      geminiMessages.push({ role: 'model', parts: [{ text: '明白，我会按照设定来。' }] });
-    }
+    // Build Gemini contents array
+    const contents = [];
+
+    // Add message history
     messages.forEach(m => {
-      geminiMessages.push({
+      contents.push({
         role: m.role === 'user' ? 'user' : 'model',
         parts: [{ text: m.content }]
       });
     });
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+    
+    const body = {
+      contents,
+      generationConfig: { maxOutputTokens: max_tokens || 1000 },
+    };
+
+    // Pass system instruction separately
+    if (system) {
+      body.systemInstruction = { parts: [{ text: system }] };
+    }
+
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: geminiMessages,
-        generationConfig: { maxOutputTokens: max_tokens || 1000 }
-      })
+      body: JSON.stringify(body)
     });
 
     const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '（没有回复）';
+    console.log('Gemini response:', JSON.stringify(data).slice(0, 500));
 
-    // Return in Anthropic-compatible format so frontend doesn't need to change
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!text) {
+      console.error('Empty text, full response:', JSON.stringify(data));
+      res.status(200).json({ content: [{ type: 'text', text: '（Gemini 没有返回内容，请稍后再试）' }] });
+      return;
+    }
+
     res.status(200).json({ content: [{ type: 'text', text }] });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Proxy error' });
+    console.error('Handler error:', err);
+    res.status(500).json({ error: 'Proxy error', message: err.message });
   }
 }
