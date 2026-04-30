@@ -408,12 +408,21 @@ async function openBookSession(session){
   document.getElementById('panelHeader').style.display='none';
   document.getElementById('chNavBar').classList.remove('visible');
   messages=[];
-  document.getElementById('chatMessages').innerHTML='<div class="welcome-card"><h3>继续读《'+escHtml(session.book_title)+'》👋</h3><p>导入书的 EPUB 文件，我们从上次读到的地方继续 ✨</p></div>';
-  document.getElementById('notebookContent').innerHTML='';
   notebookEntries=[];
   document.getElementById('notebookCount').textContent='0';
   await loadChatHistory();
   await loadAllNotebookEntries();
+  // Try to auto-load epub from storage
+  if(session.epub_storage_path){
+    document.getElementById('chatMessages').innerHTML='<div class="welcome-card"><h3>继续读《'+escHtml(session.book_title)+'》👋</h3><p>⬇️ 正在从云端加载书籍…</p></div>';
+    const ok=await downloadAndOpenEpub(session);
+    if(ok){await renderBook();}
+    else{
+      document.getElementById('chatMessages').innerHTML='<div class="welcome-card"><h3>继续读《'+escHtml(session.book_title)+'》👋</h3><p>云端加载失败，请手动导入 EPUB 文件 ✨</p></div>';
+    }
+  } else {
+    document.getElementById('chatMessages').innerHTML='<div class="welcome-card"><h3>继续读《'+escHtml(session.book_title)+'》👋</h3><p>导入书的 EPUB 文件，我们从上次读到的地方继续 ✨</p></div>';
+  }
 }
 
 // ── FILE HANDLING ──
@@ -426,8 +435,32 @@ function handleDragLeave(){document.querySelector('.book-panel .drop-zone')?.cla
 async function processFile(file){
   document.getElementById('bookTitleDisplay').textContent='正在解析…';
   const ext=file.name.split('.').pop().toLowerCase();
-  try{if(ext==='epub')await parseEpub(file);else if(ext==='txt'||ext==='md')await parseTxt(file);else{alert('请使用 EPUB 或 TXT 文件');return;}await renderBook();}
-  catch(err){console.error(err);alert('解析失败，请检查文件格式');}
+  try{
+    if(ext==='epub')await parseEpub(file);
+    else if(ext==='txt'||ext==='md')await parseTxt(file);
+    else{alert('请使用 EPUB 或 TXT 文件');return;}
+    await renderBook();
+    if(ext==='epub'&&sessionId){uploadEpubToStorage(file).catch(e=>console.warn('Upload failed:',e));}
+  }catch(err){console.error(err);alert('解析失败，请检查文件格式');}
+}
+
+async function uploadEpubToStorage(file){
+  const path=sessionId+'/book.epub';
+  const {error}=await sb.storage.from('books').upload(path,file,{upsert:true});
+  if(!error){await sb.from('reading_sessions').update({epub_storage_path:path}).eq('id',sessionId);console.log('EPUB uploaded');}
+}
+
+async function downloadAndOpenEpub(session){
+  if(!session.epub_storage_path)return false;
+  setSyncBadge('syncBadge','ing','⬇️ 下载书籍…');
+  try{
+    const {data,error}=await sb.storage.from('books').download(session.epub_storage_path);
+    if(error||!data)return false;
+    const file=new File([data],'book.epub',{type:'application/epub+zip'});
+    await parseEpub(file);
+    setSyncBadge('syncBadge','ok','☁️ 已同步');
+    return true;
+  }catch(e){console.error('Download failed:',e);setSyncBadge('syncBadge','err','⚠️ 下载失败');return false;}
 }
 
 async function parseTxt(file){
