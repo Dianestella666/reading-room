@@ -8,43 +8,29 @@ export default async function handler(req, res) {
   try {
     const { system, messages, max_tokens } = req.body;
 
-    // Build Gemini contents array
-    const contents = [];
-
-    // Add message history
-    messages.forEach(m => {
-      contents.push({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.content }]
-      });
-    });
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`;
-    
-    const body = {
-      contents,
-      generationConfig: { maxOutputTokens: max_tokens || 1000 },
-    };
-
-    // Pass system instruction separately
-    if (system) {
-      body.systemInstruction = { parts: [{ text: system }] };
-    }
-
-    const response = await fetch(url, {
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        max_tokens: max_tokens || 1000,
+        messages: [
+          ...(system ? [{ role: 'system', content: system }] : []),
+          ...messages
+        ]
+      })
     });
 
     const data = await response.json();
-    console.log('Gemini response:', JSON.stringify(data).slice(0, 500));
+    console.log('DeepSeek status:', response.status);
 
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    
+    const text = data?.choices?.[0]?.message?.content;
     if (!text) {
-      console.error('Empty text, full response:', JSON.stringify(data));
-      res.status(200).json({ content: [{ type: 'text', text: '（Gemini 没有返回内容，请稍后再试）' }] });
+      console.error('Empty response:', JSON.stringify(data));
+      res.status(200).json({ content: [{ type: 'text', text: '（没有收到回复，请稍后再试）' }] });
       return;
     }
 
