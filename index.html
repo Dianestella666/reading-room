@@ -798,7 +798,17 @@ function addTyping(){
   d.appendChild(r);d.appendChild(b);c.appendChild(d);c.scrollTop=c.scrollHeight;
 }
 function removeTyping(){const t=document.getElementById('typ');if(t)t.remove();}
-function askCC(text){document.getElementById('chatInput').value=text;sendMessage();}
+function askCC(text){
+  if(isMobile()){
+    openBottomSheet('chat');
+    setTimeout(()=>{
+      const input=document.getElementById('sheetChatInput');
+      if(input){input.value=text;sheetSendMessage();}
+    },200);
+  } else {
+    document.getElementById('chatInput').value=text;sendMessage();
+  }
+}
 async function sendMessage(){
   if(isLoading)return;const input=document.getElementById('chatInput');const text=input.value.trim();if(!text)return;
   input.value='';autoResize(input);addUserMessage(text);isLoading=true;document.getElementById('sendBtn').disabled=true;addTyping();
@@ -816,38 +826,153 @@ function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrol
 // ── MOBILE BOTTOM SHEET ──
 let currentSheet = null;
 
+function isMobile() { return window.innerWidth <= 750; }
+
 function openBottomSheet(tab) {
+  if (!isMobile()) {
+    // Desktop: just switch tab normally
+    switchTab(tab);
+    return;
+  }
   const sheet = document.getElementById('bottomSheet');
   const body = document.getElementById('bottomSheetBody');
-  const title = document.getElementById('bottomSheetTitle');
-  const chatPanel = document.getElementById('chatPanel');
-  const notebookPanel = document.getElementById('notebookPanel');
-
   currentSheet = tab;
   sheet.style.display = 'flex';
-
   document.getElementById('mobChatBtn').classList.toggle('active', tab==='chat');
   document.getElementById('mobNoteBtn').classList.toggle('active', tab==='notebook');
+  document.getElementById('bottomSheetTitle').textContent = tab==='chat' ? '💬 与CC聊' : '📚 书评本';
 
+  // Build content inline - don't move DOM nodes
   if (tab === 'chat') {
-    title.textContent = '与CC聊';
     body.innerHTML = '';
-    body.appendChild(chatPanel);
-    chatPanel.style.display = 'flex';
-    notebookPanel.style.display = 'none';
-    // Scroll to bottom
-    setTimeout(()=>{
-      const msgs = document.getElementById('chatMessages');
-      msgs.scrollTop = msgs.scrollHeight;
-    }, 50);
+    // Clone chat panel structure into sheet
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex-direction:column;flex:1;overflow:hidden';
+    
+    const msgs = document.getElementById('chatMessages').cloneNode(true);
+    msgs.id = 'sheetChatMessages';
+    msgs.style.cssText = 'flex:1;overflow-y:auto;padding:12px 13px 6px;display:flex;flex-direction:column;gap:11px;scroll-behavior:smooth';
+    
+    const qp = document.createElement('div');
+    qp.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;padding:0 11px 8px';
+    qp.innerHTML = `
+      <button onclick="sheetAskCC('请帮我认真写一段这个章节的书评，要有你自己的立场和被触动的地方，和我分享你的感受')" style="font-size:11.5px;color:var(--accent);background:white;border:1px solid var(--amber);border-radius:20px;padding:3px 10px;cursor:pointer;font-family:'DM Sans',sans-serif">✍️ 写书评给我</button>
+      <button onclick="sheetAskCC('这章讲了什么？')" style="font-size:11.5px;color:var(--ink-mid);background:white;border:1px solid var(--border-mid);border-radius:20px;padding:3px 10px;cursor:pointer;font-family:'DM Sans',sans-serif">这章讲了什么</button>
+      <button onclick="sheetAskCC('有什么让你触动的地方吗？')" style="font-size:11.5px;color:var(--ink-mid);background:white;border:1px solid var(--border-mid);border-radius:20px;padding:3px 10px;cursor:pointer;font-family:'DM Sans',sans-serif">你有触动吗</button>
+    `;
+
+    const inputArea = document.createElement('div');
+    inputArea.style.cssText = 'padding:10px 11px;border-top:1px solid var(--border);display:flex;gap:7px;align-items:flex-end;flex-shrink:0';
+    inputArea.innerHTML = `
+      <textarea id="sheetChatInput" placeholder="跟CC说点什么……" rows="1"
+        style="flex:1;border:1px solid var(--border-mid);border-radius:10px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--ink);background:white;resize:none;outline:none;max-height:100px;line-height:1.5"
+        onkeydown="sheetHandleKey(event)" oninput="autoResize(this)"></textarea>
+      <button onclick="sheetSendMessage()" style="width:35px;height:35px;border-radius:8px;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>`;
+
+    wrap.appendChild(msgs);
+    wrap.appendChild(qp);
+    wrap.appendChild(inputArea);
+    body.appendChild(wrap);
+    setTimeout(()=>{ msgs.scrollTop = msgs.scrollHeight; }, 50);
+
   } else {
-    title.textContent = '📚 书评本';
     body.innerHTML = '';
-    body.appendChild(notebookPanel);
-    notebookPanel.style.display = 'flex';
-    chatPanel.style.display = 'none';
-    renderNotebook();
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'flex:1;overflow-y:auto;padding:14px 13px';
+    renderNotebookInto(wrap);
+    body.appendChild(wrap);
   }
+}
+
+function sheetAskCC(text) {
+  const input = document.getElementById('sheetChatInput');
+  if (input) { input.value = text; sheetSendMessage(); }
+}
+
+function sheetHandleKey(e) {
+  if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); sheetSendMessage(); }
+}
+
+async function sheetSendMessage() {
+  if (isLoading) return;
+  const input = document.getElementById('sheetChatInput');
+  const text = input?.value.trim();
+  if (!text) return;
+  input.value = '';
+  autoResize(input);
+
+  // Add to real messages array and save
+  messages.push({role:'user',content:text});
+  saveMessage('user',text,false);
+
+  // Show in sheet
+  const msgs = document.getElementById('sheetChatMessages');
+  appendBubbleToEl(msgs, 'user', '你', text, false);
+
+  // Also sync to desktop chat
+  appendBubble('user','你',text,false);
+
+  isLoading = true;
+  // Typing indicator in sheet
+  const typDiv = document.createElement('div');
+  typDiv.id = 'sheetTyping';
+  typDiv.className = 'msg msg-ai';
+  typDiv.innerHTML = '<div class="msg-role">CC</div><div class="bubble"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>';
+  msgs.appendChild(typDiv);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  try {
+    const res = await fetch('/api/chat', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({model:MODEL,max_tokens:1000,system:getSystemPrompt(),messages:messages.slice(-20)})
+    });
+    const data = await res.json();
+    const t = document.getElementById('sheetTyping'); if(t) t.remove();
+    if (data.content?.[0]?.text) {
+      const reply = data.content[0].text;
+      const isReview = reply.startsWith('【书评】');
+      messages.push({role:'assistant',content:reply});
+      saveMessage('assistant',reply,isReview);
+      appendBubbleToEl(msgs, 'ai', 'CC', reply, isReview);
+      appendBubble('ai','CC',reply,isReview);
+      if(isReview){notebookEntries.push({entry_type:'review',content:reply,chapter_index:bookData.currentChapter,created_at:new Date().toISOString()});updateNotebookCount();}
+    }
+  } catch(e) {
+    const t = document.getElementById('sheetTyping'); if(t) t.remove();
+    appendBubbleToEl(msgs, 'ai', 'CC', '网络有点问题，稍后再试～', false);
+  }
+  isLoading = false;
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function appendBubbleToEl(container, role, label, text, isReview) {
+  const d = document.createElement('div');
+  d.className = `msg msg-${role}${isReview?' is-review':''}`;
+  const r = document.createElement('div'); r.className='msg-role'; r.textContent=isReview?'✍️ CC的书评':label;
+  const b = document.createElement('div'); b.className='bubble'; b.textContent=isReview?text.replace(/^【书评】\s*/,''):text;
+  d.appendChild(r); d.appendChild(b);
+  container.appendChild(d);
+}
+
+function renderNotebookInto(container) {
+  if(notebookEntries.length===0){
+    container.innerHTML='<div style="text-align:center;padding:40px;color:var(--ink-pale);font-size:13px">这里会汇集CC的书评<br>和你的所有批注</div>';
+    return;
+  }
+  const groups={};
+  notebookEntries.forEach(e=>{const idx=e.chapter_index??0;const ch=bookData.chapters[idx];const label=ch?ch.title:'第 '+(idx+1)+' 章';if(!groups[label])groups[label]=[];groups[label].push(e);});
+  let html='';
+  for(const [label,entries] of Object.entries(groups)){
+    html+='<div class="nb-chapter-group"><div class="nb-chapter-label">'+label+'</div>';
+    entries.forEach(e=>{
+      const time=new Date(e.created_at).toLocaleDateString('zh-CN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+      if(e.entry_type==='review')html+='<div class="nb-entry"><div class="nb-entry-type review">✍️ CC的书评</div><div class="nb-body">'+escHtml(e.content.replace(/^【书评】\s*/,''))+'</div><div class="nb-time">'+time+'</div></div>';
+      else html+='<div class="nb-entry"><div class="nb-entry-type note">📌 我的批注</div>'+(e.selected_text?'<div class="nb-quote">'+escHtml(e.selected_text.slice(0,120))+'</div>':'')+'<div class="nb-body">'+escHtml(e.note||'')+'</div><div class="nb-time">'+time+'</div></div>';
+    });html+='</div>';
+  }
+  container.innerHTML=html;
 }
 
 function closeBottomSheet() {
@@ -855,12 +980,7 @@ function closeBottomSheet() {
   sheet.style.display = 'none';
   document.getElementById('mobChatBtn').classList.remove('active');
   document.getElementById('mobNoteBtn').classList.remove('active');
-  // Move panels back to right-panel for desktop
-  const rightPanel = document.querySelector('.right-panel');
-  if (rightPanel) {
-    rightPanel.appendChild(document.getElementById('chatPanel'));
-    rightPanel.appendChild(document.getElementById('notebookPanel'));
-  }
+  currentSheet = null;
 }
 
 function updateMobNoteCount() {
