@@ -515,16 +515,23 @@ async function renderBook(){
   document.getElementById('panelHeader').style.display='flex';
   if(chapters.length>1)document.getElementById('chNavBar').classList.add('visible');
 
-  // If coming from shelf with existing session, reuse it; else create new
+  // If coming from shelf with existing session AND same book, reuse it; else create new
   let savedChapter=bookData.currentChapter||0;
-  if(!sessionId){
+  const currentSessionTitle = sessionId ? (await sb.from('reading_sessions').select('book_title').eq('id',sessionId).single()).data?.book_title : null;
+  if(sessionId && currentSessionTitle===title){
+    // Same book re-imported, just update chapter count
+    await sb.from('reading_sessions').update({book_author:author,total_chapters:chapters.length,updated_at:new Date().toISOString()}).eq('id',sessionId);
+    savedChapter=Math.min(bookData.currentChapter,chapters.length-1);
+  } else {
+    // Different book or no session — reset and create/find session
+    sessionId=null;
+    messages=[];
+    notebookEntries=[];
+    document.getElementById('chatMessages').innerHTML='';
+    document.getElementById('notebookCount').textContent='0';
     savedChapter=await getOrCreateSession(title,author,chapters.length);
     await loadChatHistory();
     await loadAllNotebookEntries();
-  } else {
-    // Update session with new chapter count if re-importing
-    await sb.from('reading_sessions').update({book_author:author,total_chapters:chapters.length,updated_at:new Date().toISOString()}).eq('id',sessionId);
-    savedChapter=Math.min(bookData.currentChapter,chapters.length-1);
   }
   renderChapter(savedChapter<chapters.length?savedChapter:0);
   if(messages.length===0)setTimeout(()=>{addAIMessage('《'+title+'》导入好啦'+(author?'，'+author+' 的书':'')+'，共 '+chapters.length+' 章 ✨\n\n选中正文里的文字，可以写批注或叫我一起讨论 📖',false);},300);
