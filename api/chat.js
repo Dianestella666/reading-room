@@ -1,18 +1,18 @@
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') { res.status(200).end(); return; }
-  if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+export async function onRequestPost(context) {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
 
   try {
-    const { system, messages, max_tokens } = req.body;
+    const { system, messages, max_tokens } = await context.request.json();
 
     const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
+        'Authorization': `Bearer ${context.env.DEEPSEEK_API_KEY}`
       },
       body: JSON.stringify({
         model: 'deepseek-chat',
@@ -25,18 +25,32 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-    console.log('DeepSeek status:', response.status);
-
     const text = data?.choices?.[0]?.message?.content;
+
     if (!text) {
-      console.error('Empty response:', JSON.stringify(data));
-      res.status(200).json({ content: [{ type: 'text', text: '（没有收到回复，请稍后再试）' }] });
-      return;
+      return new Response(JSON.stringify({ content: [{ type: 'text', text: '（没有收到回复，请稍后再试）' }] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    res.status(200).json({ content: [{ type: 'text', text }] });
+    return new Response(JSON.stringify({ content: [{ type: 'text', text }] }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
   } catch (err) {
-    console.error('Handler error:', err);
-    res.status(500).json({ error: 'Proxy error', message: err.message });
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
+}
+
+export async function onRequestOptions() {
+  return new Response(null, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    }
+  });
 }
