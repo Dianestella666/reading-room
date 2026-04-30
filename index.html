@@ -187,7 +187,90 @@ header{display:flex;align-items:center;gap:12px;padding:10px 18px;background:var
 .welcome-card h3{font-family:'Lora',serif;font-size:13.5px;font-weight:600;color:var(--accent);margin-bottom:4px}
 .welcome-card p{font-size:12.5px;color:var(--ink-mid);line-height:1.75}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:3px}
-@media(max-width:750px){.chapter-nav{display:none}.book-panel{border-right:none;border-bottom:1px solid var(--border-strong);max-height:43vh}.main{flex-direction:column}}
+@media(max-width:750px){
+  /* Header mobile */
+  header{padding:8px 12px;gap:8px;flex-wrap:nowrap}
+  .back-btn{padding:5px 8px;font-size:11px;flex-shrink:0}
+  .back-btn span{display:none}
+  .logo{display:none}
+  .book-info{flex:1;min-width:0;overflow:hidden}
+  .book-title-display{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .book-subtitle{display:none}
+  .sync-badge{display:none}
+  .import-btn span{display:none}
+  .import-btn{padding:7px 10px;min-width:36px;justify-content:center}
+
+  /* Shelf header mobile */
+  .shelf-header{padding:12px 16px}
+  .shelf-logo{font-size:16px}
+  .shelf-logo em{display:none}
+  .add-book-btn span{display:none}
+  .add-book-btn{padding:8px 10px}
+
+  /* Main layout mobile - full screen book */
+  .chapter-nav{display:none}
+  .main{flex-direction:column;position:relative}
+  .book-panel{flex:1;border-right:none;border-bottom:none;min-height:0}
+  .book-content{padding:20px 20px 100px}
+  .book-text{font-size:16px;line-height:2}
+
+  /* Hide right panel on mobile - use bottom sheet instead */
+  .right-panel{display:none}
+
+  /* Bottom bar */
+  .mobile-bottom-bar{display:flex}
+
+  /* Bottom sheet */
+  .bottom-sheet{display:flex}
+}
+
+@media(min-width:751px){
+  .mobile-bottom-bar{display:none !important}
+  .bottom-sheet{display:none !important}
+}
+
+/* ── MOBILE BOTTOM BAR ── */
+.mobile-bottom-bar{
+  display:none;position:fixed;bottom:0;left:0;right:0;
+  background:var(--cream-dark);border-top:1px solid var(--border-strong);
+  padding:8px 16px 20px;gap:10px;z-index:500;
+}
+.mob-btn{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+  background:white;border:1px solid var(--border-mid);border-radius:10px;
+  padding:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;
+  color:var(--ink-mid);cursor:pointer;transition:all .15s;
+}
+.mob-btn.active{background:var(--accent);color:white;border-color:var(--accent)}
+.mob-btn svg{width:16px;height:16px;fill:currentColor}
+
+/* ── BOTTOM SHEET ── */
+.bottom-sheet{
+  display:none;position:fixed;inset:0;z-index:600;flex-direction:column;
+}
+.bottom-sheet-overlay{flex:1;background:rgba(0,0,0,.3)}
+.bottom-sheet-panel{
+  background:var(--chat-bg);border-radius:18px 18px 0 0;
+  max-height:75vh;display:flex;flex-direction:column;
+  box-shadow:0 -4px 30px rgba(0,0,0,.15);
+  animation:sheetUp .25s ease;
+}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.bottom-sheet-handle{
+  width:36px;height:4px;background:var(--border-strong);border-radius:2px;
+  margin:10px auto 0;flex-shrink:0;
+}
+.bottom-sheet-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px 8px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.bottom-sheet-title{font-size:14px;font-weight:500;color:var(--ink)}
+.bottom-sheet-close{
+  width:28px;height:28px;background:var(--cream-mid);border:none;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.bottom-sheet-close svg{width:14px;height:14px;fill:var(--ink-mid)}
+.bottom-sheet-body{flex:1;overflow:hidden;display:flex;flex-direction:column}
 </style>
 </head>
 <body>
@@ -294,6 +377,33 @@ header{display:flex;align-items:center;gap:12px;padding:10px 18px;background:var
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Mobile Bottom Bar -->
+<div class="mobile-bottom-bar" id="mobileBottomBar">
+  <button class="mob-btn" id="mobChatBtn" onclick="openBottomSheet('chat')">
+    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+    与CC聊
+  </button>
+  <button class="mob-btn" id="mobNoteBtn" onclick="openBottomSheet('notebook')">
+    <svg viewBox="0 0 24 24"><path d="M18 2h-3.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-6 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H8v-2h6v2zm2-4H8v-2h8v2zm0-4H8V6h8v2z"/></svg>
+    书评本 <span id="mobNoteCount" style="font-size:10px;background:var(--amber-light);color:var(--accent);padding:1px 6px;border-radius:10px;margin-left:2px">0</span>
+  </button>
+</div>
+
+<!-- Bottom Sheet -->
+<div class="bottom-sheet" id="bottomSheet">
+  <div class="bottom-sheet-overlay" onclick="closeBottomSheet()"></div>
+  <div class="bottom-sheet-panel">
+    <div class="bottom-sheet-handle"></div>
+    <div class="bottom-sheet-header">
+      <div class="bottom-sheet-title" id="bottomSheetTitle">与CC聊</div>
+      <button class="bottom-sheet-close" onclick="closeBottomSheet()">
+        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
+    </div>
+    <div class="bottom-sheet-body" id="bottomSheetBody"></div>
   </div>
 </div>
 
@@ -578,7 +688,7 @@ async function loadAllNotebookEntries(){
   notebookEntries.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
   updateNotebookCount();
 }
-function updateNotebookCount(){document.getElementById('notebookCount').textContent=notebookEntries.length;}
+function updateNotebookCount(){document.getElementById('notebookCount').textContent=notebookEntries.length;const m=document.getElementById('mobNoteCount');if(m)m.textContent=notebookEntries.length;}
 async function loadChatHistory(){
   if(!sessionId)return;setSyncBadge('syncBadge','ing','⏳ 加载记录');
   const {data}=await sb.from('chat_messages').select('*').eq('session_id',sessionId).order('created_at',{ascending:true});
@@ -702,6 +812,61 @@ async function sendMessage(){
 }
 function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}}
 function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,100)+'px';}
+
+// ── MOBILE BOTTOM SHEET ──
+let currentSheet = null;
+
+function openBottomSheet(tab) {
+  const sheet = document.getElementById('bottomSheet');
+  const body = document.getElementById('bottomSheetBody');
+  const title = document.getElementById('bottomSheetTitle');
+  const chatPanel = document.getElementById('chatPanel');
+  const notebookPanel = document.getElementById('notebookPanel');
+
+  currentSheet = tab;
+  sheet.style.display = 'flex';
+
+  document.getElementById('mobChatBtn').classList.toggle('active', tab==='chat');
+  document.getElementById('mobNoteBtn').classList.toggle('active', tab==='notebook');
+
+  if (tab === 'chat') {
+    title.textContent = '与CC聊';
+    body.innerHTML = '';
+    body.appendChild(chatPanel);
+    chatPanel.style.display = 'flex';
+    notebookPanel.style.display = 'none';
+    // Scroll to bottom
+    setTimeout(()=>{
+      const msgs = document.getElementById('chatMessages');
+      msgs.scrollTop = msgs.scrollHeight;
+    }, 50);
+  } else {
+    title.textContent = '📚 书评本';
+    body.innerHTML = '';
+    body.appendChild(notebookPanel);
+    notebookPanel.style.display = 'flex';
+    chatPanel.style.display = 'none';
+    renderNotebook();
+  }
+}
+
+function closeBottomSheet() {
+  const sheet = document.getElementById('bottomSheet');
+  sheet.style.display = 'none';
+  document.getElementById('mobChatBtn').classList.remove('active');
+  document.getElementById('mobNoteBtn').classList.remove('active');
+  // Move panels back to right-panel for desktop
+  const rightPanel = document.querySelector('.right-panel');
+  if (rightPanel) {
+    rightPanel.appendChild(document.getElementById('chatPanel'));
+    rightPanel.appendChild(document.getElementById('notebookPanel'));
+  }
+}
+
+function updateMobNoteCount() {
+  const el = document.getElementById('mobNoteCount');
+  if (el) el.textContent = notebookEntries.length;
+}
 
 // ── INIT ──
 (async()=>{
