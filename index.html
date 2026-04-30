@@ -382,10 +382,6 @@ header{display:flex;align-items:center;gap:12px;padding:10px 18px;background:var
 
 <!-- Mobile Bottom Bar -->
 <div class="mobile-bottom-bar" id="mobileBottomBar">
-  <button class="mob-btn" id="mobChapBtn" onclick="openBottomSheet('chapters')">
-    <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
-    目录
-  </button>
   <button class="mob-btn" id="mobChatBtn" onclick="openBottomSheet('chat')">
     <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
     与CC聊
@@ -664,7 +660,14 @@ function renderChapter(index){
 
 function goToChapter(i){renderChapter(i);}
 function goChapter(d){const n=bookData.currentChapter+d;if(n>=0&&n<bookData.chapters.length)renderChapter(n);}
-function toggleNav(){navVisible=!navVisible;document.getElementById('chapterNav').classList.toggle('collapsed',!navVisible);}
+function toggleNav(){
+  if(isMobile()){
+    openBottomSheet('chapters');
+  } else {
+    navVisible=!navVisible;
+    document.getElementById('chapterNav').classList.toggle('collapsed',!navVisible);
+  }
+}
 
 // ── SUPABASE OPS ──
 async function getOrCreateSession(title,author,totalChapters){
